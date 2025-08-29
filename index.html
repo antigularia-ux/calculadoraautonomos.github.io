@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <!--
+  Copyright (c) 2025 Erik
+  All rights reserved.
+  -->
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="author" content="Erik"/>
+  <meta name="copyright" content="© 2025 Erik"/>
+  <meta name="description" content="Calculadora para autónomos: desglosa tus ventas y organiza tu economía con IVA, IRPF, autónomos, ahorro y sueldo. Todos los derechos reservados."/>
+  <title>Calculadora para autónomos</title>
+  <style>
+    body{
+      margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;color:#222;
+      background:linear-gradient(-45deg,#ffd1dc,#d1ffd6,#d1e0ff,#fff4d1);
+      background-size:400% 400%;animation:bgAnim 20s ease infinite;
+    }
+    @keyframes bgAnim{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+    *{box-sizing:border-box}
+    .wrap{max-width:1100px;margin:24px auto;padding:0 14px}
+    .hdr{text-align:center;margin-bottom:20px;position:relative;padding-bottom:28px}
+    h1{margin:0;font-size:46px;font-weight:700}
+    .sub{color:#555;font-size:16px;margin-top:8px}
+    .grid{display:grid;grid-template-columns:340px 1fr;gap:12px}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}}
+    .card{background:rgba(255,255,255,.8);backdrop-filter:blur(6px);border-radius:14px;padding:14px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    label{font-size:12px;color:#444}
+    input,select,button{width:100%;padding:10px;border-radius:10px;border:1px solid #ccc;background:#fff;color:#000}
+    .line{display:flex;justify-content:space-between;padding:8px 10px;margin-top:6px;background:#f0f0f0;border-radius:10px}
+    button.primary{background:linear-gradient(180deg,#7c9eff,#5f7fe8);border:none;color:#0b0f1c;font-weight:600;cursor:pointer}
+    button.danger{background:linear-gradient(180deg,#ffb86b,#ff9f4d);border:none;color:#1a1208;cursor:pointer}
+    table{width:100%;border-collapse:separate;border-spacing:0 8px}
+    th{color:#444;font-size:12px;text-align:left;padding:0 6px}
+    td{background:#f0f0f0;padding:8px 6px}
+    td:first-child{border-radius:8px 0 0 8px}td:last-child{border-radius:0 8px 8px 0}
+    .r{text-align:right}
+    .btm{margin-top:10px;display:flex;gap:8px;justify-content:flex-end}
+    .info{margin:20px auto 0;padding:14px;background:rgba(255,255,255,.8);backdrop-filter:blur(6px);border-radius:12px;font-size:14px;line-height:1.5;color:#333;text-align:left;max-width:800px}
+    footer{text-align:center;padding:15px;font-size:13px;color:#333}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hdr">
+      <h1>Calculadora para autónomos</h1>
+      <div class="sub">Desglosa tus ventas y organiza tu economía</div>
+    </div>
+    <div class="grid">
+      <section class="card">
+        <h3>Configuración & cálculo</h3>
+        <div class="row3">
+          <div><label>IVA (%)</label><input id="iva" type="number" step="0.01" value="4"></div>
+          <div><label>IRPF (%)</label><input id="irpf" type="number" step="0.01" value="21"></div>
+          <div><label>Ahorro (%)</label><input id="ahorro" type="number" step="0.01" value="10"></div>
+        </div>
+        <div class="row">
+          <div><label>Autónomos (%)</label><input id="auto" type="number" step="0.01" value="12.8"></div>
+          <div><label>Redondeo</label><select id="round"><option value="cent">Al céntimo</option><option value="down">Hacia abajo</option><option value="up">Hacia arriba</option><option value="none">Sin redondeo</option></select></div>
+        </div>
+        <hr>
+        <div class="row">
+          <div><label>Fecha</label><input id="fecha" type="date"></div>
+          <div><label>Concepto</label><input id="concepto" placeholder="Feria / Online / Cliente X"></div>
+        </div>
+        <div class="row">
+          <div><label>Importe venta (€)</label><input id="importe" type="number" step="0.01" placeholder="100"></div>
+          <div style="display:flex;align-items:flex-end"><button id="add" class="primary">Añadir venta</button></div>
+        </div>
+        <div class="line"><span>IVA</span><strong id="oIVA">0,00 €</strong></div>
+        <div class="line"><span>IRPF</span><strong id="oIRPF">0,00 €</strong></div>
+        <div class="line"><span>Autónomos</span><strong id="oAUTO">0,00 €</strong></div>
+        <div class="line"><span>Ahorro</span><strong id="oAHO">0,00 €</strong></div>
+        <div class="line"><span>Sueldo neto</span><strong id="oSUE">0,00 €</strong></div>
+      </section>
+      <section class="card">
+        <h3>Ventas guardadas</h3>
+        <div style="overflow:auto">
+          <table>
+            <thead><tr><th>Fecha</th><th>Concepto</th><th class="r">Venta</th><th class="r">IVA</th><th class="r">IRPF</th><th class="r">Autón.</th><th class="r">Ahorro</th><th class="r">Sueldo</th><th></th></tr></thead>
+            <tbody id="tb"></tbody>
+            <tfoot><tr><td colspan="2" class="r"><b>Totales</b></td><td class="r" id="tV">0,00 €</td><td class="r" id="tI">0,00 €</td><td class="r" id="tP">0,00 €</td><td class="r" id="tA">0,00 €</td><td class="r" id="tH">0,00 €</td><td class="r" id="tS">0,00 €</td><td></td></tr></tfoot>
+          </table>
+        </div>
+        <div class="btm"><button id="export">Exportar Excel</button></div>
+      </section>
+    </div>
+    <div class="info">
+      <h3>Calculadora para autónomos, para saber de qué vamos a morir a fin de mes</h3>
+      <p><strong>¿Para quién sirve?</strong> Esta calculadora sirve para todos/as los/as autónomos/as que se dediquen a la venta ambulante o en establecimiento y no generen una factura desglosada en las ventas.</p>
+      <p>Puede que a final de mes o cada tres meses te des un susto con los gastos o puede que no sepas qué parte de las ventas correspondería al IRPF, al IVA o incluso a la reinversión para el negocio o el sueldo propio.</p>
+      <p>Esta herramienta te permitirá hacer un cálculo de todo esto en función de tus ventas. <strong>¡OJO!</strong> Esto no es un gestor, ni un generador de facturas. Es una calculadora sencilla y orientativa para gestionar nuestros ingresos.</p>
+      <p><em>ESPERO QUE TE SIRVA</em></p>
+      <p style="margin-top:10px;font-style:italic;">Firmado Erik, un autónomo</p>
+    </div>
+  </div>
+  <footer>© 2025 Erik — Todos los derechos reservados</footer>
+  <script>
+    const $=s=>document.querySelector(s),F=n=>isFinite(n)?n.toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2}):'0,00',K1='conf-autonomos',K2='ventas-autonomos';
+    const iva=$('#iva'),irpf=$('#irpf'),aho=$('#ahorro'),aut=$('#auto'),rnd=$('#round'),imp=$('#importe'),fec=$('#fecha'),con=$('#concepto');
+    const oI=$('#oIVA'),oP=$('#oIRPF'),oA=$('#oAUTO'),oH=$('#oAHO'),oS=$('#oSUE'),tb=$('#tb'),tV=$('#tV'),tI=$('#tI'),tP=$('#tP'),tA=$('#tA'),tH=$('#tH'),tS=$('#tS');
+    const R=x=>{const m=rnd.value;return !isFinite(x)?0:m==='cent'?Math.round(x*100)/100:m==='down'?Math.floor(x*100)/100:m==='up'?Math.ceil(x*100)/100:x};
+    const C=()=>({iva:+iva.value||0,irpf:+irpf.value||0,ahorro:+aho.value||0,auto:+aut.value||0});
+    const calc=v=>{const c=C(),i=R(v*c.iva/100),p=R(v*c.irpf/100),a=R(v*c.auto/100),h=R(v*c.ahorro/100);return{v,iva:i,irpf:p,auto:a,aho:h,s:R(v-i-p-a-h)}};
+    const prev=()=>{const r=calc(+imp.value||0);oI.textContent=F(r.iva)+' €';oP.textContent=F(r.irpf)+' €';oA.textContent=F(r.auto)+' €';oH.textContent=F(r.aho)+' €';oS.textContent=F(r.s)+' €'};
+    [imp,iva,irpf,aho,aut,rnd].forEach(e=>e.addEventListener('input',()=>{localStorage.setItem(K1,JSON.stringify({iva:iva.value,irpf:irpf.value,aho:aho.value,aut:aut.value,rnd:rnd.value}));prev()}));
+    const rows=()=>{try{const a=JSON.parse(localStorage.getItem(K2)||'[]');return Array.isArray(a)?a:[]}catch{return[]}};
+    const save=a=>localStorage.setItem(K2,JSON.stringify(a));
+    const render=()=>{const a=rows();tb.innerHTML='';let SV=0,SI=0,SP=0,SA=0,SH=0,SS=0;a.forEach((r,i)=>{SV+=r.v;SI+=r.iva;SP+=r.irpf;SA+=r.auto;SH+=r.aho;SS+=r.s;const tr=document.createElement('tr');[r.f,r.c,F(r.v)+' €',F(r.iva)+' €',F(r.irpf)+' €',F(r.auto)+' €',F(r.aho)+' €',F(r.s)+' €'].forEach((t,ix)=>{const td=document.createElement('td');td.textContent=t;td.className=ix>=2?'r':'';tr.appendChild(td)});const td=document.createElement('td'),b=document.createElement('button');b.textContent='Eliminar';b.className='danger';b.onclick=()=>{const x=rows();x.splice(i,1);save(x);render()};td.appendChild(b);tr.appendChild(td);tb.appendChild(tr)});tV.textContent=F(SV)+' €';tI.textContent=F(SI)+' €';tP.textContent=F(SP)+' €';tA.textContent=F(SA)+' €';tH.textContent=F(SH)+' €';tS.textContent=F(SS)+' €'};
+    $('#add').addEventListener('click',()=>{const v=+imp.value||0;if(v<=0)return alert('Importe inválido');const r=calc(v),a=rows();a.push({f:fec.value||new Date().toISOString().slice(0,10),c:(con.value||'—').trim(),v:r.v,iva:r.iva,irpf:r.irpf,auto:r.auto,aho:r.aho,s:r.s});save(a);imp.value='';con.value='';prev();render()});
+    $('#export').addEventListener('click',()=>{const a=rows(),hdr=['Fecha','Concepto','Venta','IVA','IRPF','Autónomos','Ahorro','Sueldo'],data=a.map(r=>[r.f,r.c,r.v,r.iva,r.irpf,r.auto,r.aho,r.s]);const tot=a.reduce((x,r)=>({v:x.v+r.v,i:x.i+r.iva,p:x.p+r.irpf,a:x.a+r.auto,h:x.h+r.aho,s:x.s+r.s}),{v:0,i:0,p:0,a:0,h:0,s:0});const ws=XLSX.utils.aoa_to_sheet([hdr,...data,[],['Totales','',tot.v,tot.i,tot.p,tot.a,tot.h,tot.s]]);ws['!cols']=[12,24,12,12,12,12,12,12].map(w=>({wch:w}));const ws2=XLSX.utils.aoa_to_sheet([['Parámetro','Valor'],['IVA (%)',+iva.value||0],['IRPF (%)',+irpf.value||0],['Autónomos (%)',+aut.value||0],['Ahorro (%)',+aho.value||0],['Nº ventas',a.length],['Total Ventas',tot.v],['Total IVA',tot.i],['Total IRPF',tot.p],['Total Autónomos',tot.a],['Total Ahorro',tot.h],['Total Sueldo',tot.s]]);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Ventas');XLSX.utils.book_append_sheet(wb,ws2,'Resumen');const d=new Date().toISOString().slice(0,10);XLSX.writeFile(wb,'reparto_ventas_'+d+'.xlsx')});
+    (function(){try{const c=JSON.parse(localStorage.getItem(K1)||'{}');if(c){if(c.iva)iva.value=c.iva;if(c.irpf)irpf.value=c.irpf;if(c.aho)aho.value=c.aho;if(c.aut)aut.value=c.aut;if(c.rnd)rnd.value=c.rnd}}catch{}render();prev()})();
+  </script>
+</body>
+</html>
